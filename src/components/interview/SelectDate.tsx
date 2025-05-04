@@ -14,14 +14,20 @@ export default function SelectDate({ staffId, staffName, onNext, onBack }: Selec
   const [selectedTime, setSelectedTime] = useState<string>('');
   const navigate = useNavigate();
 
-  // Generate available time slots
-  const timeSlots = [
-    '09:00', '10:00', '11:00', '12:00',
-    '13:00', '14:00', '15:00', '16:00'
-  ];
+  // Generate available time slots from 6 AM to 5:30 PM in 30-minute intervals with AM/PM
+  const timeSlots = [];
+  for (let hour = 6; hour < 18; hour++) {
+    const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+    const ampm = hour < 12 ? 'AM' : 'PM';
+    timeSlots.push(`${displayHour}:00 ${ampm}`);
+    // Add 5:30 PM slot, avoid adding 6:00 PM
+    if (hour !== 17) {
+        timeSlots.push(`${displayHour}:30 ${ampm}`);
+    }
+  }
 
-  // Get next 7 days
-  const availableDates = Array.from({ length: 7 }, (_, i) => {
+  // Get next 14 days
+  const availableDates = Array.from({ length: 14 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() + i);
     return date;
@@ -30,8 +36,17 @@ export default function SelectDate({ staffId, staffName, onNext, onBack }: Selec
   const handleContinue = () => {
     if (selectedDate && selectedTime) {
       const dateTime = new Date(selectedDate);
-      const [hours, minutes] = selectedTime.split(':');
-      dateTime.setHours(parseInt(hours), parseInt(minutes));
+      const [timePart, ampm] = selectedTime.split(' ');
+      let [hours, minutes] = timePart.split(':').map(Number);
+
+      if (ampm === 'PM' && hours !== 12) {
+        hours += 12;
+      }
+      if (ampm === 'AM' && hours === 12) { // Handle midnight case (12 AM)
+        hours = 0;
+      }
+
+      dateTime.setHours(hours, minutes);
       onNext(dateTime);
     }
   };
@@ -45,7 +60,7 @@ export default function SelectDate({ staffId, staffName, onNext, onBack }: Selec
           className="text-gray-600 hover:text-gray-900 flex items-center"
         >
           <ChevronLeft className="w-5 h-5 mr-1" />
-          Return to Results
+          Return
         </button>
       </div>
 

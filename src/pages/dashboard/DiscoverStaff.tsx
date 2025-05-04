@@ -178,10 +178,32 @@ export default function DiscoverStaff() {
       const pageSize = 9;
       const from = pageNumber * pageSize;
 
+      // Fetch IDs of staff with scheduled interviews
+      let scheduledStaffIds: string[] = [];
+      if (profile?.id) {
+        const { data: interviewData, error: interviewError } = await supabase
+          .from('staff_interviews')
+          .select('staff_id')
+          .eq('client_id', profile.id)
+          .eq('status', 'scheduled');
+
+        if (interviewError) {
+          console.error('Error fetching scheduled interviews:', interviewError);
+          // Decide how to handle this error - maybe proceed without filtering?
+        } else {
+          scheduledStaffIds = interviewData?.map(i => i.staff_id) || [];
+        }
+      }
+
       let query = supabase
         .from('staff')
         .select('*', { count: 'exact' })
         .eq('status', 'active');
+
+      // Exclude staff with scheduled interviews
+      if (scheduledStaffIds.length > 0) {
+        query = query.not('id', 'in', `(${scheduledStaffIds.join(',')})`);
+      }
 
       if (filters.location) {
         query = query.eq('location', filters.location);
@@ -327,7 +349,7 @@ export default function DiscoverStaff() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Discover Staff</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Discover Employee</h1>
       </div>
 
       <div className="flex gap-4 mb-6">
@@ -361,7 +383,7 @@ export default function DiscoverStaff() {
           }`}
         >
           <Filter size={20} className="mr-2" />
-          Filter
+          Filters
         </button>
       </div>
 
@@ -383,7 +405,7 @@ export default function DiscoverStaff() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Experience</label>
+              <label className="block text-sm font-medium text-gray-700">Experience Level</label>
               <select
                 value={`${filters.minExperience}-${filters.maxExperience} years`}
                 onChange={(e) => handleFilterChange('minExperience', e.target.value)}
@@ -443,13 +465,13 @@ export default function DiscoverStaff() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Skills</label>
+              <label className="block text-sm font-medium text-gray-700">Skill</label>
               <select
                 value={filters.skills[0] || ''}
                 onChange={(e) => handleFilterChange('skills', [e.target.value])}
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:ring-primary"
               >
-                <option value="">Select Skill</option>
+                <option value="">All Skills</option>
                 {COMMON_SKILLS.map(skill => (
                   <option key={skill} value={skill}>{skill}</option>
                 ))}

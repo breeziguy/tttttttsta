@@ -97,7 +97,7 @@ function StaffDetailsPopover({ staff, onClose }: StaffDetailsPopoverProps) {
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Phone</h3>
-              <p className="mt-1 text-sm text-gray-900">{staff.phone}</p>
+              <p className="mt-1 text-sm text-gray-900">{`+234${staff.phone.startsWith('0') ? staff.phone.substring(1) : staff.phone}`}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Location</h3>

@@ -24,19 +24,40 @@ interface Interview {
   status: string;
   feedback?: string;
   rating?: number;
+  cancellation_reason?: string; // Added cancellation reason
 }
 
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (feedback: string, rating: number, action: 'hire' | 'unsuccessful' | 'canceled') => Promise<void>;
+  onSubmit: (feedback: string, rating: number, action: 'hire' | 'unsuccessful', cancellationReason?: string) => Promise<void>; // Adjusted onSubmit signature
   type: 'hire' | 'unsuccessful' | 'canceled';
 }
 
 function FeedbackModal({ isOpen, onClose, onSubmit, type }: FeedbackModalProps) {
   const [feedback, setFeedback] = useState('');
   const [rating, setRating] = useState(5);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [customReason, setCustomReason] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const cancellationOptions = [
+    "Scheduling conflict",
+    "Changed mind",
+    "Found another candidate",
+    "Custom"
+  ];
+
+  useEffect(() => {
+    // Reset state when modal opens or type changes
+    if (isOpen) {
+      setFeedback('');
+      setRating(5);
+      setCancellationReason('');
+      setCustomReason('');
+      setLoading(false);
+    }
+  }, [isOpen, type]);
 
   if (!isOpen) return null;
 
@@ -44,7 +65,9 @@ function FeedbackModal({ isOpen, onClose, onSubmit, type }: FeedbackModalProps) 
     e.preventDefault();
     setLoading(true);
     try {
-      await onSubmit(feedback, rating, type);
+      const finalCancellationReason = cancellationReason === 'Custom' ? customReason : cancellationReason;
+      // Pass cancellation reason only if type is 'canceled'
+      await onSubmit(feedback, rating, type === 'canceled' ? 'canceled' : type, type === 'canceled' ? finalCancellationReason : undefined);
       onClose();
     } catch (error) {
       console.error('Error submitting feedback:', error);
@@ -67,35 +90,64 @@ function FeedbackModal({ isOpen, onClose, onSubmit, type }: FeedbackModalProps) 
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Rating</label>
-            <div className="mt-1 flex items-center gap-2">
-              {[1, 2, 3, 4, 5].map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setRating(value)}
-                  className={`p-2 rounded-full ${
-                    rating >= value ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                  }`}
-                >
-                  <Star size={20} fill={rating >= value ? 'currentColor' : 'none'} />
-                </button>
-              ))}
-            </div>
-          </div>
+          {type !== 'canceled' ? (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Rating</label>
+                <div className="mt-1 flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setRating(value)}
+                      className={`p-2 rounded-full ${
+                        rating >= value ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                      }`}
+                    >
+                      <Star size={20} fill={rating >= value ? 'currentColor' : 'none'} />
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Feedback</label>
-            <textarea
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              rows={4}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-              placeholder="Please provide your feedback..."
-              required
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Feedback</label>
+                <textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  rows={4}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                  placeholder="Please provide your feedback..."
+                  required
+                />
+              </div>
+            </>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Cancellation</label>
+              <select
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary p-2 text-base" // Added padding and text size
+                required
+              >
+                <option value="" disabled>Select a reason</option>
+                {cancellationOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              {cancellationReason === 'Custom' && (
+                <textarea
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  rows={3}
+                  className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary p-2 text-base" // Added padding and text size
+                  placeholder="Please specify the reason..."
+                  required
+                />
+              )}
+            </div>
+          )}
 
           <div className="flex justify-end gap-4">
             <button
@@ -103,7 +155,7 @@ function FeedbackModal({ isOpen, onClose, onSubmit, type }: FeedbackModalProps) 
               onClick={onClose}
               className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
             >
-              Cancel
+              {type === 'canceled' ? 'Close' : 'Cancel'} {/* Changed button text */}
             </button>
             <button
               type="submit"
@@ -113,7 +165,7 @@ function FeedbackModal({ isOpen, onClose, onSubmit, type }: FeedbackModalProps) 
                   ? 'bg-green-500 hover:bg-green-600'
                   : type === 'unsuccessful'
                   ? 'bg-red-500 hover:bg-red-600'
-                  : 'bg-gray-500 hover:bg-gray-600'
+                  : 'bg-red-500 hover:bg-red-600' // Changed cancel button color to red
               } disabled:opacity-50`}
             >
               {loading ? 'Submitting...' : type === 'hire' ? 'Confirm Hire' : type === 'unsuccessful' ? 'Mark Unsuccessful' : 'Cancel Booking'}
@@ -303,62 +355,59 @@ export default function Schedule() {
   const handleFeedbackSubmit = async (
     feedback: string,
     rating: number,
-    action: 'hire' | 'unsuccessful' | 'canceled'
+    action: 'hire' | 'unsuccessful' | 'canceled',
+    cancellationReason?: string
   ) => {
-    if (!selectedInterview?.staff || !profile?.id) return;
+    if (!selectedInterview || !profile?.id) return;
 
     try {
-      // Update interview status and feedback
-      const { error: interviewError } = await supabase
+      let updateData: any = {
+        status: action === 'hire' ? 'completed' : action === 'unsuccessful' ? 'rejected' : 'cancelled',
+        feedback: action !== 'canceled' ? feedback : null,
+        rating: action !== 'canceled' ? rating : null,
+        cancellation_reason: action === 'canceled' ? cancellationReason : null,
+      };
+
+      const { error } = await supabase
         .from('staff_interviews')
-        .update({
-          status: action === 'hire' ? 'completed' : action === 'unsuccessful' ? 'rejected' : 'cancelled',
-          feedback,
-          rating,
-          hiring_decision: action === 'hire' ? 'hired' : action === 'unsuccessful' ? 'rejected' : 'canceled',
-          decision_date: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', selectedInterview.id);
 
-      if (interviewError) throw interviewError;
+      if (error) throw error;
 
+      // If hired, update staff_hiring_status as well
       if (action === 'hire') {
-        // Create hiring status record
-        const { error: hiringError } = await supabase
+        const { error: hireError } = await supabase
           .from('staff_hiring_status')
           .insert({
             client_id: profile.id,
             staff_id: selectedInterview.staff.id,
-            interview_id: selectedInterview.id,
             status: 'hired',
-            start_date: new Date().toISOString().split('T')[0],
+            start_date: new Date().toISOString(), // Corrected date format
           });
-
-        if (hiringError) throw hiringError;
-        toast.success('Staff hired successfully!');
-      } else if (action === 'unsuccessful') {
-        toast.success('Interview marked as unsuccessful');
-      } else {
-        toast.success('Booking cancelled successfully');
+        if (hireError) {
+          // Handle potential duplicate entry or other errors
+          if (hireError.code === '23505') { // unique constraint violation
+            console.warn('Staff already marked as hired, updating existing record if necessary or ignoring.', hireError);
+            // Optionally update the existing record if needed
+          } else {
+            console.error('Error inserting into staff_hiring_status:', hireError); // Log specific hire error
+            throw hireError;
+          }
+        }
       }
 
-      // Create feedback record
-      const { error: feedbackError } = await supabase
-        .from('staff_feedback')
-        .insert({
-          client_id: profile.id,
-          staff_id: selectedInterview.staff.id,
-          rating,
-          comment: feedback
-        });
-
-      if (feedbackError) throw feedbackError;
-
-      // Refresh the interviews list
-      fetchInterviews();
-    } catch (error) {
-      console.error('Error updating staff status:', error);
-      toast.error(`Failed to ${action} staff`);
+      toast.success(`Interview marked as ${action === 'hire' ? 'completed' : action === 'unsuccessful' ? 'rejected' : 'cancelled'}.`);
+      fetchInterviews(); // Refresh the list
+      setIsFeedbackModalOpen(false);
+      setSelectedInterview(null);
+    } catch (error: any) { // Added type annotation for error
+      console.error(`Error marking interview as ${action}:`, error); // Enhanced logging
+      // Log specific Supabase error details if available
+      if (error && error.message) {
+        console.error('Supabase error details:', error.message, error.details, error.hint);
+      }
+      toast.error(`Failed to mark interview as ${action}. Details: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -376,7 +425,7 @@ export default function Schedule() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Booking</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Interviews</h1>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">

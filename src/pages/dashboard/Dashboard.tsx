@@ -198,7 +198,7 @@ export default function Dashboard() {
           }`}
         >
           <Users size={18} className="mr-3" />
-          Discover
+          Discover Employee
         </a>
 
         <a

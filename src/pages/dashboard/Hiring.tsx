@@ -296,203 +296,214 @@ export default function Hiring() {
     if (!selectedStaff?.staff || !profile?.id) return;
 
     try {
-      if (action === 'hire') {
-        // Create hiring status record
-        const { error: hiringError } = await supabase
-          .from('staff_hiring_status')
-          .insert({
-            client_id: profile.id,
-            staff_id: selectedStaff.staff.id,
-            status: 'hired',
-            start_date: new Date().toISOString().split('T')[0],
-          });
-
-        if (hiringError) throw hiringError;
-        toast.success('Staff hired successfully!');
-      } else {
-        // Update hiring status to rejected
-        const { error: rejectError } = await supabase
-          .from('staff_hiring_status')
-          .update({
-            status: 'rejected',
-            end_date: new Date().toISOString().split('T')[0],
-          })
-          .eq('id', selectedStaff.id);
-
-        if (rejectError) throw rejectError;
-        toast.success('Staff rejected successfully');
-      }
-
-      // Create feedback record
+      // Common feedback record creation
       const { error: feedbackError } = await supabase
         .from('staff_feedback')
         .insert({
           client_id: profile.id,
-          staff_id: selectedStaff.staff.id,
+          staff_id: selectedStaff.staff.id, // Assuming staff_id is the correct FK here
           rating,
-          comment: feedback
+          comment: feedback,
+          decision: action // Add decision to feedback
         });
 
       if (feedbackError) throw feedbackError;
 
-      // Refresh the staff list
-      fetchHiredStaff();
+      if (action === 'hire') {
+        // Create or update hiring status record for 'hired'
+        const { error: hiringError } = await supabase
+          .from('staff_hiring_status')
+          .upsert({ // Use upsert in case a record exists (e.g., previously rejected)
+            client_id: profile.id,
+            staff_id: selectedStaff.staff.id,
+            status: 'hired',
+            start_date: new Date().toISOString().split('T')[0],
+            // interview_id: selectedStaff.interview_id || null // Include interview_id if available - Assuming interview_id is not on HiredStaff type
+          }, { onConflict: 'client_id, staff_id' }); // Define conflict resolution
+
+        if (hiringError) throw hiringError;
+        toast.success(`Staff hired successfully!`);
+
+      } else if (action === 'reject') {
+        // Update hiring status record for 'rejected'
+         const { error: rejectError } = await supabase
+          .from('staff_hiring_status')
+          .upsert({
+            client_id: profile.id,
+            staff_id: selectedStaff.staff.id,
+            status: 'rejected',
+            start_date: null, // No start date for rejection
+            // interview_id: selectedStaff.interview_id || null
+          }, { onConflict: 'client_id, staff_id' });
+
+        if (rejectError) throw rejectError;
+        toast.success(`Staff rejected successfully!`);
+      }
+
+      // Assuming fetchHiredStaff is the correct function name based on useEffect
+      fetchHiredStaff(); // Refresh the list after success
+      setIsFeedbackModalOpen(false); // Close modal on success
+      setSelectedStaff(null); // Clear selected staff
+
     } catch (error) {
       console.error('Error updating staff status:', error);
       toast.error(`Failed to ${action} staff`);
     }
-  };
+  }; // End of handleFeedbackSubmit function
 
-  if (loading) {
-    return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-gray-600">Loading hired staff...</span>
+  // Component render logic starts here
+
+    if (loading) {
+      return (
+        <div className="min-h-[400px] flex items-center justify-center">
+          <div className="flex items-center space-x-2">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-gray-600">Loading hired staff...</span>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Hiring</h1>
-      </div>
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">Hiring</h1>
+        </div>
 
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="min-w-full divide-y divide-gray-200">
-          <div className="bg-gray-50 px-6 py-3">
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Staff
-              </div>
-              <div className="col-span-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Role
-              </div>
-              <div className="col-span-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Start Date
-              </div>
-              <div className="col-span-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Status
-              </div>
-              <div className="col-span-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Level
-              </div>
-              <div className="col-span-1 text-right text-xs font-medium text-gray-500 uppercase">
-                Action
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="min-w-full divide-y divide-gray-200">
+            <div className="bg-gray-50 px-6 py-3">
+              <div className="grid grid-cols-12 gap-4">
+                <div className="col-span-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Staff
+                </div>
+                <div className="col-span-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Role
+                </div>
+                <div className="col-span-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Start Date
+                </div>
+                <div className="col-span-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Status
+                </div>
+                <div className="col-span-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  Level
+                </div>
+                <div className="col-span-1 text-right text-xs font-medium text-gray-500 uppercase">
+                  Action
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white divide-y divide-gray-200">
-            {hiredStaff.length === 0 ? (
-              <div className="px-6 py-10 text-center">
-                <div className="mx-auto h-12 w-12 text-gray-400">
-                  <Users className="w-full h-full" />
+            <div className="bg-white divide-y divide-gray-200">
+              {hiredStaff.length === 0 ? (
+                <div className="px-6 py-10 text-center">
+                  <div className="mx-auto h-12 w-12 text-gray-400">
+                    <Users className="w-full h-full" />
+                  </div>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No hired staff</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    You haven't hired any staff members yet.
+                  </p>
                 </div>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No hired staff</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  You haven't hired any staff members yet.
-                </p>
-              </div>
-            ) : (
-              hiredStaff.map((staff) => (
-                <div
-                  key={staff.id}
-                  className={`px-6 py-4 hover:bg-gray-50 ${
-                    staff.status === 'scheduled' ? 'cursor-pointer' : ''
-                  }`}
-                  onClick={() => {
-                    if (staff.status === 'scheduled') {
-                      handleStaffClick(staff);
-                    }
-                  }}
-                >
-                  <div className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-3 flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        {staff.staff?.image_url ? (
-                          <img
-                            className="h-10 w-10 rounded-full object-cover"
-                            src={staff.staff.image_url}
-                            alt={staff.staff.name}
-                          />
-                        ) : (
-                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-xl font-medium text-gray-600">
-                              {staff.staff?.name?.charAt(0) || '?'}
-                            </span>
+              ) : (
+                hiredStaff.map((staff) => (
+                  <div
+                    key={staff.id}
+                    className={`px-6 py-4 hover:bg-gray-50 ${
+                      staff.status === 'scheduled' ? 'cursor-pointer' : ''
+                    }`}
+                    onClick={() => {
+                      if (staff.status === 'scheduled') {
+                        handleStaffClick(staff);
+                      }
+                    }}
+                  >
+                    <div className="grid grid-cols-12 gap-4 items-center">
+                      <div className="col-span-3 flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          {staff.staff?.image_url ? (
+                            <img
+                              className="h-10 w-10 rounded-full object-cover"
+                              src={staff.staff.image_url}
+                              alt={staff.staff.name}
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-xl font-medium text-gray-600">
+                                {staff.staff?.name?.charAt(0) || '?'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <div className="flex items-center gap-1">
+                            <div className="text-sm font-medium text-gray-900">
+                              {staff.staff?.name || 'Unknown Staff'}
+                            </div>
+                            <VerifiedIcon verified={staff.staff?.verified} />
                           </div>
+                          <div className="text-sm text-gray-500">{staff.staff?.email}</div>
+                          <div className="text-sm text-gray-500">{staff.staff?.role}</div>
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="text-sm text-gray-900">{staff.staff?.role}</div>
+                        <div className="text-xs text-gray-500">{staff.staff?.level}</div>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="text-sm text-gray-900">
+                          {new Date(staff.start_date).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            staff.status === 'hired'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {staff.status.charAt(0).toUpperCase() + staff.status.slice(1)}
+                        </span>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="text-sm text-gray-900">{staff.staff?.level}</div>
+                      </div>
+                      <div className="col-span-1 text-right">
+                        {staff.status === 'scheduled' && (
+                          <button className="text-gray-400 hover:text-gray-500">
+                            <span className="sr-only">View details</span>
+                            <ChevronRight size={20} />
+                          </button>
                         )}
                       </div>
-                      <div className="ml-4">
-                        <div className="flex items-center gap-1">
-                          <div className="text-sm font-medium text-gray-900">
-                            {staff.staff?.name || 'Unknown Staff'}
-                          </div>
-                          <VerifiedIcon verified={staff.staff?.verified} />
-                        </div>
-                        <div className="text-sm text-gray-500">{staff.staff?.email}</div>
-                        <div className="text-sm text-gray-500">{staff.staff?.role}</div>
-                      </div>
-                    </div>
-                    <div className="col-span-2">
-                      <div className="text-sm text-gray-900">{staff.staff?.role}</div>
-                      <div className="text-xs text-gray-500">{staff.staff?.level}</div>
-                    </div>
-                    <div className="col-span-2">
-                      <div className="text-sm text-gray-900">
-                        {new Date(staff.start_date).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div className="col-span-2">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          staff.status === 'hired'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {staff.status.charAt(0).toUpperCase() + staff.status.slice(1)}
-                      </span>
-                    </div>
-                    <div className="col-span-2">
-                      <div className="text-sm text-gray-900">{staff.staff?.level}</div>
-                    </div>
-                    <div className="col-span-1 text-right">
-                      {staff.status === 'scheduled' && (
-                        <button className="text-gray-400 hover:text-gray-500">
-                          <span className="sr-only">View details</span>
-                          <ChevronRight size={20} />
-                        </button>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
+
+        {selectedStaff && (
+          <StaffDetailsModal
+            staff={selectedStaff}
+            isOpen={isDetailsModalOpen}
+            onClose={() => setIsDetailsModalOpen(false)}
+            onAction={handleAction}
+          />
+        )}
+
+        {selectedStaff && (
+          <FeedbackModal
+            isOpen={isFeedbackModalOpen}
+            onClose={() => setIsFeedbackModalOpen(false)}
+            onSubmit={handleFeedbackSubmit}
+            type={feedbackType}
+          />
+        )}
       </div>
-
-      {selectedStaff && (
-        <StaffDetailsModal
-          staff={selectedStaff}
-          isOpen={isDetailsModalOpen}
-          onClose={() => setIsDetailsModalOpen(false)}
-          onAction={handleAction}
-        />
-      )}
-
-      {selectedStaff && (
-        <FeedbackModal
-          isOpen={isFeedbackModalOpen}
-          onClose={() => setIsFeedbackModalOpen(false)}
-          onSubmit={handleFeedbackSubmit}
-          type={feedbackType}
-        />
-      )}
-    </div>
-  );
+    );
+// Removed misplaced };
 }

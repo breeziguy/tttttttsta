@@ -50,7 +50,7 @@ function AvailabilityModal({ isOpen, onClose, onContinue, staffPhone }: Availabi
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Confirm Staff Availability</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Confirm Availability</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
             <X size={20} />
           </button>
@@ -58,11 +58,11 @@ function AvailabilityModal({ isOpen, onClose, onContinue, staffPhone }: Availabi
         
         <div className="mb-6">
           <p className="text-gray-600 mb-4">
-            Please call the staff member to confirm their availability before proceeding with the booking.
+            Please contact the employee to confirm their availability before proceeding with the booking.
           </p>
           <div className="bg-gray-50 p-4 rounded-lg flex items-center justify-center">
             <Phone className="w-5 h-5 text-primary mr-2" />
-            <span className="text-lg font-medium text-gray-900">{staffPhone}</span>
+            <span className="text-lg font-medium text-gray-900">{`+234${staffPhone.startsWith('0') ? staffPhone.substring(1) : staffPhone}`}</span>
           </div>
         </div>
 
@@ -71,7 +71,7 @@ function AvailabilityModal({ isOpen, onClose, onContinue, staffPhone }: Availabi
             onClick={onClose}
             className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
           >
-            Mark as Unavailable
+            Employee Unavailable
           </button>
           <button
             onClick={onContinue}
@@ -186,7 +186,7 @@ export default function StaffDetails() {
             onClick={() => navigate(-1)}
             className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-600"
           >
-            Return to Results
+            Return
           </button>
         </div>
       </div>
@@ -204,7 +204,7 @@ export default function StaffDetails() {
             onClick={() => navigate(-1)}
             className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-600"
           >
-            Return to Results
+            Return
           </button>
         </div>
       </div>
@@ -240,7 +240,7 @@ export default function StaffDetails() {
         className="mb-6 flex items-center text-gray-600 hover:text-gray-900"
       >
         <ChevronLeft className="w-5 h-5 mr-1" />
-        Return to Results
+        Return
       </button>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -288,7 +288,7 @@ export default function StaffDetails() {
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <Phone size={18} />
-                  <span>{staff.phone}</span>
+                  <span>{`+234${staff.phone.startsWith('0') ? staff.phone.substring(1) : staff.phone}`}</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <Star size={18} />
@@ -354,13 +354,13 @@ export default function StaffDetails() {
             onClick={() => navigate(-1)}
             className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
           >
-            Go Back
+            Cancel
           </button>
           <button
             onClick={handleBookingClick}
             className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-600"
           >
-            Proceed to Schedule
+            Schedule Interview
           </button>
         </div>
       </div>

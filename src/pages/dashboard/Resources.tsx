@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { FileText, Video, AlertCircle, Loader2, ChevronRight, X } from 'lucide-react';
+import { FileText, Video, AlertCircle, Loader2, ChevronRight, X, BookOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Resource {
@@ -18,7 +18,7 @@ interface Resource {
 }
 
 const RESOURCE_CATEGORIES = {
-  training: 'Staff Training',
+  training: 'Training',
   guidelines: 'Best Practices',
   legal: 'Legal Documents',
   faq: 'FAQs',
@@ -113,11 +113,11 @@ export default function Resources() {
       const { data, error: fetchError } = await supabase
         .from('resources')
         .select('*')
-        .eq('published', true)
+        .eq('published', true as any)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
-      setResources(data || []);
+      setResources(data as any || []);
     } catch (err) {
       console.error('Error fetching resources:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch resources');
@@ -132,7 +132,7 @@ export default function Resources() {
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="flex items-center space-x-2">
           <Loader2 className="w-6 h-6 text-primary animate-spin" />
-          <span className="text-gray-600">Loading resources...</span>
+          <span className="text-gray-600">Loading...</span>
         </div>
       </div>
     );
@@ -143,7 +143,7 @@ export default function Resources() {
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Resources</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={fetchResources}
@@ -166,31 +166,44 @@ export default function Resources() {
   }, {} as Record<string, Resource[]>);
 
   return (
-    <div 
-      className="min-h-screen bg-cover bg-center bg-no-repeat"
-      style={{
-        backgroundImage: 'url("/02 - RECTANGLE.jpg")',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        backgroundBlendMode: 'overlay'
-      }}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Training & Resources</h1>
-          <p className="text-lg text-gray-600">Access our comprehensive library of training materials and resources</p>
-        </div>
+    <div className="space-y-6 py-4 px-6 bg-green-50 rounded-lg min-h-screen">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Resources</h1>
+      </div>
 
-        <div className="space-y-12">
+      {loading ? (
+        <div className="min-h-[400px] flex items-center justify-center">
+          <div className="flex items-center space-x-2">
+            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+            <span className="text-gray-600">Loading...</span>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="min-h-[400px] flex items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={fetchResources}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-600"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-8">
           {Object.entries(groupedResources).map(([category, categoryResources]) => (
-            <div key={category} className="space-y-6">
-              <h2 className="text-2xl font-semibold text-gray-900 border-b border-gray-200 pb-2">
+            <div key={category} className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900 pb-2 border-b border-gray-200">
                 {RESOURCE_CATEGORIES[category as keyof typeof RESOURCE_CATEGORIES] || category}
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {categoryResources.map((resource) => (
                   <div
                     key={resource.id}
-                    className="bg-white rounded-lg shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow transform hover:-translate-y-1 duration-200"
+                    className="bg-white rounded-lg shadow overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md transform hover:-translate-y-1"
                     onClick={() => setSelectedResource(resource)}
                   >
                     <div className="aspect-video relative">
@@ -202,25 +215,31 @@ export default function Resources() {
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                          <FileText className="w-12 h-12 text-gray-400" />
+                          {resource.content_type === 'video' ? (
+                            <Video className="w-12 h-12 text-gray-400" />
+                          ) : (
+                            <BookOpen className="w-12 h-12 text-gray-400" />
+                          )}
                         </div>
                       )}
                       {resource.duration_minutes && (
-                        <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm">
+                        <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs">
                           {resource.duration_minutes} min
                         </div>
                       )}
                     </div>
 
                     <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 mb-2">{resource.title}</h3>
-                      <p className="text-sm text-gray-600 line-clamp-2 mb-4">{resource.description}</p>
+                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">{resource.title}</h3>
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-3">{resource.description}</p>
 
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500 capitalize">
-                          {RESOURCE_CATEGORIES[category as keyof typeof RESOURCE_CATEGORIES] || category}
-                        </span>
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs px-2 py-1 bg-primary bg-opacity-10 text-primary rounded-full">
+                          {resource.content_type}
+                        </div>
+                        <div className="text-primary">
+                          <ChevronRight size={18} />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -229,7 +248,7 @@ export default function Resources() {
             </div>
           ))}
         </div>
-      </div>
+      )}
 
       {selectedResource && (
         <ResourceDetailsModal

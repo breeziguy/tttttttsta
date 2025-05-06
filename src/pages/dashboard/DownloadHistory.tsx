@@ -59,7 +59,7 @@ export default function DownloadHistory() {
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="flex items-center space-x-2">
           <Loader2 className="w-6 h-6 text-primary animate-spin" />
-          <span className="text-gray-600">Loading download history...</span>
+          <span className="text-gray-600">Loading...</span>
         </div>
       </div>
     );
@@ -70,7 +70,7 @@ export default function DownloadHistory() {
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading History</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={fetchDownloadHistory}

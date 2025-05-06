@@ -25,7 +25,7 @@ interface FormData {
   householdAdults?: number;
   hasChildren?: boolean;
   hasPets?: boolean;
-  liveInAccommodation?: 'Available' | 'Not Available';
+  liveInAccommodation?: 'Required' | 'Non Required';
   preferredContact?: 'Call' | 'WhatsApp';
 
   // Corporate Specific
@@ -153,7 +153,7 @@ export default function ProfileCompletion() {
   const renderSidebar = () => (
     <div className="fixed left-0 top-0 bottom-0 w-[360px] bg-gray-50 p-8">
       <div className="mb-12">
-        <div className="h-8 w-8 bg-orange-500 rounded-lg flex items-center justify-center">
+        <div className="h-8 w-8 bg-green-500 rounded-lg flex items-center justify-center">
           <Users className="text-white" size={20} />
         </div>
       </div>
@@ -242,7 +242,7 @@ export default function ProfileCompletion() {
               required
               value={formData.fullName}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 px-3 py-2"
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
             />
           </div>
 
@@ -272,7 +272,7 @@ export default function ProfileCompletion() {
               required
               value={formData.phoneNumber}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 px-3 py-2"
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
             />
           </div>
 
@@ -287,7 +287,7 @@ export default function ProfileCompletion() {
               required
               value={formData.address}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 px-3 py-2"
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
             />
           </div>
 
@@ -301,7 +301,7 @@ export default function ProfileCompletion() {
               required
               value={formData.state}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 px-3 py-2"
+              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
             >
               <option value="">Select State</option>
               {NIGERIAN_STATES.map(state => (
@@ -323,7 +323,7 @@ export default function ProfileCompletion() {
                   required
                   value={formData.rcNumber}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 px-3 py-2"
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
                 />
               </div>
 
@@ -337,7 +337,7 @@ export default function ProfileCompletion() {
                   required
                   value={formData.industry}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 px-3 py-2"
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
                 >
                   <option value="">Select Industry</option>
                   <option value="Technology">Technology</option>
@@ -364,7 +364,7 @@ export default function ProfileCompletion() {
                   required
                   value={formData.companyEmail}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 px-3 py-2"
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
                 />
               </div>
 
@@ -379,7 +379,7 @@ export default function ProfileCompletion() {
                   required
                   value={formData.companyPhone}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 px-3 py-2"
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
                 />
               </div>
 
@@ -393,7 +393,7 @@ export default function ProfileCompletion() {
                   id="website"
                   value={formData.website}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 px-3 py-2"
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
                 />
               </div>
             </>
@@ -411,7 +411,7 @@ export default function ProfileCompletion() {
                   required
                   value={formData.householdAdults}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 px-3 py-2"
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
                 />
               </div>
 
@@ -425,11 +425,11 @@ export default function ProfileCompletion() {
                   required
                   value={formData.liveInAccommodation}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 px-3 py-2"
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
                 >
                   <option value="">Select Option</option>
-                  <option value="Available">Available</option>
-                  <option value="Not Available">Not Available</option>
+                  <option value="Required">Required</option>
+                  <option value="Non Required">Non Required</option>
                 </select>
               </div>
 
@@ -443,7 +443,7 @@ export default function ProfileCompletion() {
                   required
                   value={formData.preferredContact}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 px-3 py-2"
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 px-3 py-2"
                 >
                   <option value="">Select Option</option>
                   <option value="Call">Call</option>
@@ -462,7 +462,7 @@ export default function ProfileCompletion() {
                         value="true"
                         checked={formData.hasChildren === true}
                         onChange={() => setFormData(prev => ({ ...prev, hasChildren: true }))}
-                        className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300"
+                        className="h-4 w-4 text-green-500 focus:ring-green-500 border-gray-300"
                       />
                       <span className="ml-2">Yes</span>
                     </label>
@@ -473,7 +473,7 @@ export default function ProfileCompletion() {
                         value="false"
                         checked={formData.hasChildren === false}
                         onChange={() => setFormData(prev => ({ ...prev, hasChildren: false }))}
-                        className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300"
+                        className="h-4 w-4 text-green-500 focus:ring-green-500 border-gray-300"
                       />
                       <span className="ml-2">No</span>
                     </label>
@@ -490,7 +490,7 @@ export default function ProfileCompletion() {
                         value="true"
                         checked={formData.hasPets === true}
                         onChange={() => setFormData(prev => ({ ...prev, hasPets: true }))}
-                        className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300"
+                        className="h-4 w-4 text-green-500 focus:ring-green-500 border-gray-300"
                       />
                       <span className="ml-2">Yes</span>
                     </label>
@@ -501,7 +501,7 @@ export default function ProfileCompletion() {
                         value="false"
                         checked={formData.hasPets === false}
                         onChange={() => setFormData(prev => ({ ...prev, hasPets: false }))}
-                        className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300"
+                        className="h-4 w-4 text-green-500 focus:ring-green-500 border-gray-300"
                       />
                       <span className="ml-2">No</span>
                     </label>
@@ -517,7 +517,7 @@ export default function ProfileCompletion() {
             <button
               type="submit"
               disabled={loading}
-              className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+              className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               {loading ? 'Saving...' : 'Complete Profile'}
             </button>

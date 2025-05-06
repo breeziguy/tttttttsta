@@ -265,7 +265,7 @@ export default function Dashboard() {
           }`}
         >
           <Clock size={18} className="mr-3" />
-          Training & Guides
+          Resources
         </a>
 
         <a

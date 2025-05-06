@@ -182,7 +182,7 @@ export default function VettingRequests() {
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="flex items-center space-x-2">
           <Loader2 className="w-6 h-6 text-primary animate-spin" />
-          <span className="text-gray-600">Loading vetting requests...</span>
+          <span className="text-gray-600">Loading...</span>
         </div>
       </div>
     );

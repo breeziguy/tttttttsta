@@ -17,7 +17,12 @@ interface Profile {
   household_adults?: number;
   hasChildren?: boolean;
   hasPets?: boolean;
-  live_in_accommodation?: 'Available' | 'Not Available';
+  has_pets?: boolean;
+  number_of_household_members?: number;
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  live_in_accommodation?: 'Required' | 'Non Required';
   preferred_contact?: 'Call' | 'WhatsApp';
   // Corporate specific
   company_name?: string;

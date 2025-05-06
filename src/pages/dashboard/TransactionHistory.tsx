@@ -62,8 +62,8 @@ export default function TransactionHistory() {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="flex items-center space-x-2">
-          <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-          <span className="text-gray-600">Loading transactions...</span>
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+          <span className="text-gray-600">Loading...</span>
         </div>
       </div>
     );
@@ -76,7 +76,7 @@ export default function TransactionHistory() {
           <p className="text-red-500 mb-4">{error}</p>
           <button
             onClick={fetchTransactions}
-            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
           >
             Try Again
           </button>

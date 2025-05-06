@@ -143,7 +143,7 @@ export default function Overview() {
           <p className="text-gray-600 mb-4">Unable to load dashboard data. Please check your connection.</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
           >
             Retry
           </button>
@@ -158,7 +158,7 @@ export default function Overview() {
       <div 
         className="relative rounded-lg shadow-sm p-6 mb-6 h-[200px] overflow-hidden"
         style={{
-          backgroundImage: 'url("/02 - RECTANGLE.jpg")',
+          backgroundImage: 'url("/banner.jpg")',
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
@@ -192,12 +192,12 @@ export default function Overview() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center">
-            <div className="p-3 bg-orange-100 rounded-lg">
-              <Users className="text-orange-600" size={24} />
+            <div className="p-3 bg-green-100 rounded-lg">
+              <Users className="text-green-600" size={24} />
             </div>
             <div className="ml-4">
               <h3 className="text-lg font-semibold text-gray-900">{stats.activeStaffCount}</h3>
-              <p className="text-gray-600">Active Staff</p>
+              <p className="text-gray-600">Active Employee</p>
             </div>
           </div>
         </div>

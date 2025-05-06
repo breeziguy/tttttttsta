@@ -5,27 +5,22 @@ import { useAuthStore } from '../../store/auth';
 import { Search, Filter, X, ChevronUp, ChevronDown, Heart, Loader2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import VerifiedIcon from '../../components/VerifiedIcon';
+import ScheduleReminderModal from '../../components/ScheduleReminderModal';
+import type { Database, Json } from '../../lib/database.types';
+import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
 
-interface Staff {
-  id: string;
-  name: string;
-  role: string;
-  service_type: string;
-  status: string;
-  experience: number;
-  skills: string[];
-  image_url: string | null;
-  staff_id: string;
-  level: string;
-  location: string;
-  age: number;
-  salary: number;
-  certifications: any[];
-  education_background: any[];
-  work_history: any[];
-  verified?: boolean;
-}
+// Use generated types directly
+type StaffRow = Database['public']['Tables']['staff']['Row'];
+type StaffSelectionInsert = Database['public']['Tables']['staff_selections']['Insert'];
+// Define Enums used for status fields if applicable
+type StaffStatusEnum = Database['public']['Enums']['staff_status'];
+type SelectionStatusEnum = 'selected' | 'rejected' | 'interviewed' | 'hired'; // Assuming these are the possible values for staff_selections.status
+type InterviewStatusEnum = Database['public']['Enums']['interview_status'];
+// We don't seem to need these specific types below, but keeping definitions is fine
+type StaffInterviewRow = Database['public']['Tables']['staff_interviews']['Row'];
+type StaffSelectionRow = Database['public']['Tables']['staff_selections']['Row'];
 
+// Restore FilterState definition
 interface FilterState {
   location: string;
   minExperience: string;
@@ -35,6 +30,10 @@ interface FilterState {
   skills: string[];
   role: string;
   gender: string;
+  accommodation: string;
+  contractType: string;
+  minSalary: string;
+  maxSalary: string;
 }
 
 const LAGOS_LGAS = [
@@ -45,7 +44,7 @@ const LAGOS_LGAS = [
 ];
 
 const STAFF_ROLES = [
-  'Nanny', 'Housekeeper', 'Cook', 'Driver', 'Security', 'Elderly Care', 'Office Assistant'
+  'Nanny', 'Housekeeper', 'Cook', 'Driver', 'Security', 'Chef', 'Cleaner', 'Ironing Man'
 ];
 
 const EXPERIENCE_RANGES = [
@@ -64,9 +63,16 @@ const AGE_RANGES = [
   { min: 56, max: 100, label: '55+ years' }
 ];
 
+const SALARY_RANGES = [
+  { min: 0, max: 70000, label: 'Up to 70k Naira' },
+  { min: 70000, max: 150000, label: '70k - 150k Naira' },
+  { min: 150000, max: 230000, label: '150k - 230k Naira' },
+  { min: 230000, max: 300000, label: '230k - 300k Naira' },
+  { min: 300000, max: 1000000000, label: '300k+ Naira' }
+];
+
 const COMMON_SKILLS = [
-  'Cooking', 'Cleaning', 'Child Care', 'Elderly Care', 'First Aid', 'Pet Care',
-  'Laundry', 'Ironing', 'Driving', 'Security', 'Office Management', 'Basic Computer Skills'
+  'Literacy', 'Cooking', 'Pet Care', 'First Aid'
 ];
 
 const GENDER_OPTIONS = [
@@ -78,7 +84,7 @@ const GENDER_OPTIONS = [
 export default function DiscoverStaff() {
   const navigate = useNavigate();
   const { profile } = useAuthStore();
-  const [staff, setStaff] = useState<Staff[]>([]);
+  const [staff, setStaff] = useState<StaffRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -97,15 +103,35 @@ export default function DiscoverStaff() {
     maxAge: '',
     skills: [],
     role: '',
-    gender: ''
+    gender: '',
+    accommodation: '',
+    contractType: '',
+    minSalary: '',
+    maxSalary: ''
   });
+  const [showScheduleReminder, setShowScheduleReminder] = useState(false);
+  const [scheduleReminderCount, setScheduleReminderCount] = useState(0);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile?.id) {
-      fetchStaff();
+      fetchStaff(0);
       loadFavorites();
+      
+      const count = localStorage.getItem('scheduleReminderCount');
+      if (count) {
+        setScheduleReminderCount(parseInt(count));
+      }
+    } else {
+      setLoading(false);
+      setStaff([]);
     }
-  }, [profile?.id]);
+  }, [profile?.id, filters, showFavorites, searchQuery]);
+
+  useEffect(() => {
+    // This is just a placeholder - actual infinite scroll logic is needed here
+    // It should probably call fetchStaff(page + 1) under certain conditions
+  }, [page]);
 
   const loadFavorites = async () => {
     if (!profile?.id) return;
@@ -114,18 +140,22 @@ export default function DiscoverStaff() {
       const { data, error } = await supabase
         .from('staff_selections')
         .select('staff_id')
-        .eq('client_id', profile.id)
-        .eq('status', 'selected');
+        .eq('client_id', profile.id as any)
+        .eq('status', 'selected' as any);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading favorites:", error);
+        throw error;
+      }
 
-      setFavorites(new Set(data?.map(item => item.staff_id) || []));
+      const favoritesData = data as { staff_id: string }[] | null;
+      setFavorites(new Set(favoritesData?.map(item => item.staff_id).filter(Boolean) || []));
     } catch (err) {
       console.error('Error loading favorites:', err);
     }
   };
 
-  const handleFavorite = async (staffMember: Staff, e: React.MouseEvent) => {
+  const handleFavorite = async (staffMember: StaffRow, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!profile?.id) {
       toast.error('Please log in to favorite staff');
@@ -139,8 +169,8 @@ export default function DiscoverStaff() {
         const { error } = await supabase
           .from('staff_selections')
           .delete()
-          .eq('client_id', profile.id)
-          .eq('staff_id', staffMember.id);
+          .eq('client_id', profile.id as any)
+          .eq('staff_id', staffMember.id as any);
 
         if (error) throw error;
 
@@ -152,13 +182,15 @@ export default function DiscoverStaff() {
 
         toast.success('Removed from favorites');
       } else {
+        const insertData = {
+          client_id: profile.id,
+          staff_id: staffMember.id,
+          status: 'selected'
+        } as any;
+        
         const { error } = await supabase
           .from('staff_selections')
-          .insert({
-            client_id: profile.id,
-            staff_id: staffMember.id,
-            status: 'selected'
-          });
+          .insert(insertData as any);
 
         if (error) throw error;
 
@@ -178,35 +210,33 @@ export default function DiscoverStaff() {
       const pageSize = 9;
       const from = pageNumber * pageSize;
 
-      // Fetch IDs of staff with scheduled interviews
       let scheduledStaffIds: string[] = [];
       if (profile?.id) {
         const { data: interviewData, error: interviewError } = await supabase
           .from('staff_interviews')
           .select('staff_id')
-          .eq('client_id', profile.id)
-          .eq('status', 'scheduled');
+          .eq('client_id', profile.id as any)
+          .eq('status', 'scheduled' as any);
 
         if (interviewError) {
           console.error('Error fetching scheduled interviews:', interviewError);
-          // Decide how to handle this error - maybe proceed without filtering?
         } else {
-          scheduledStaffIds = interviewData?.map(i => i.staff_id) || [];
+          const interviewStaffIds = interviewData as { staff_id: string }[] | null;
+          scheduledStaffIds = interviewStaffIds?.map((i) => i.staff_id) || [];
         }
       }
 
       let query = supabase
         .from('staff')
         .select('*', { count: 'exact' })
-        .eq('status', 'active');
+        .eq('status', 'active' as any);
 
-      // Exclude staff with scheduled interviews
       if (scheduledStaffIds.length > 0) {
         query = query.not('id', 'in', `(${scheduledStaffIds.join(',')})`);
       }
 
       if (filters.location) {
-        query = query.eq('location', filters.location);
+        query = query.eq('location', filters.location as any);
       }
 
       if (filters.minExperience) {
@@ -226,11 +256,27 @@ export default function DiscoverStaff() {
       }
 
       if (filters.role) {
-        query = query.eq('role', filters.role);
+        query = query.eq('role', filters.role as any);
       }
 
       if (filters.gender) {
-        query = query.eq('gender', filters.gender);
+        query = query.eq('gender', filters.gender as any);
+      }
+
+      if (filters.accommodation) {
+        // Use the enum value directly for filtering
+        query = query.eq('accommodation_status', filters.accommodation as any);
+      }
+
+      if (filters.contractType) {
+        query = query.ilike('availability', `%${filters.contractType}%`);
+      }
+
+      if (filters.minSalary) {
+        query = query.gte('salary', parseInt(filters.minSalary));
+      }
+      if (filters.maxSalary) {
+        query = query.lte('salary', parseInt(filters.maxSalary));
       }
 
       if (filters.skills.length > 0) {
@@ -242,7 +288,7 @@ export default function DiscoverStaff() {
       }
 
       if (showFavorites && favorites.size > 0) {
-        query = query.in('id', Array.from(favorites));
+        query = query.in('id', Array.from(favorites) as any);
       }
 
       const { data, error: fetchError, count } = await query
@@ -256,6 +302,8 @@ export default function DiscoverStaff() {
 
       const accessibleCount = Math.floor(total * (accessPercentage / 100));
 
+      const fetchedStaff = data as unknown as StaffRow[];
+      
       if (from >= accessibleCount) {
         setHasMore(false);
         setStaff(prev => pageNumber === 0 ? [] : prev);
@@ -264,12 +312,12 @@ export default function DiscoverStaff() {
       }
 
       if (pageNumber === 0) {
-        setStaff(data || []);
+        setStaff(fetchedStaff);
       } else {
-        setStaff(prev => [...prev, ...(data || [])]);
+        setStaff(prev => [...prev, ...fetchedStaff]);
       }
 
-      setHasMore((data?.length || 0) === pageSize && from + data?.length < accessibleCount);
+      setHasMore(fetchedStaff.length === pageSize && from + fetchedStaff.length < accessibleCount);
     } catch (err) {
       console.error('Error fetching staff:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch staff');
@@ -298,6 +346,15 @@ export default function DiscoverStaff() {
           maxAge: range.max.toString()
         }));
       }
+    } else if (key === 'minSalary' || key === 'maxSalary') {
+      const range = SALARY_RANGES.find(r => r.label === value);
+      if (range) {
+        setFilters(prev => ({
+          ...prev,
+          minSalary: range.min.toString(),
+          maxSalary: range.max.toString()
+        }));
+      }
     } else {
       setFilters(prev => ({ ...prev, [key]: value }));
     }
@@ -313,7 +370,11 @@ export default function DiscoverStaff() {
       maxAge: '',
       skills: [],
       role: '',
-      gender: ''
+      gender: '',
+      accommodation: '',
+      contractType: '',
+      minSalary: '',
+      maxSalary: ''
     });
     setPage(0);
   };
@@ -323,13 +384,38 @@ export default function DiscoverStaff() {
     fetchStaff(0);
   };
 
-  // Check if user's state is Lagos
   const isLagosState = () => {
     if (!profile?.location) return false;
     return profile.location.toLowerCase().includes('lagos');
   };
 
-  // If not in Lagos, show the state restriction message
+  const handleNavigateToStaff = (memberId: string) => {
+    // Store the ID to navigate to after closing modal
+    setSelectedStaffId(memberId);
+    
+    // Only show reminder if count is less than 3
+    if (scheduleReminderCount < 3) {
+      setShowScheduleReminder(true);
+      // Increment the count
+      const newCount = scheduleReminderCount + 1;
+      setScheduleReminderCount(newCount);
+      // Save to localStorage
+      localStorage.setItem('scheduleReminderCount', newCount.toString());
+    } else {
+      // If already shown 3 times, navigate directly
+      navigate(`/dashboard/staff/${memberId}`, { state: { fromMyHires: false } });
+    }
+  };
+  
+  const handleCloseReminder = () => {
+    setShowScheduleReminder(false);
+    
+    // Navigate to staff details after closing the modal
+    if (selectedStaffId) {
+      navigate(`/dashboard/staff/${selectedStaffId}`, { state: { fromMyHires: false } });
+    }
+  };
+
   if (!isLagosState()) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -477,6 +563,54 @@ export default function DiscoverStaff() {
                 ))}
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Accommodation</label>
+              <select
+                name="accommodation"
+                id="accommodation"
+                value={filters.accommodation}
+                onChange={(e) => handleFilterChange('accommodation', e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:ring-primary"
+              >
+                <option value="">Any</option>
+                <option value="Required">Required</option>
+                <option value="Non Required">Non Required</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Contract Type</label>
+              <select
+                name="contractType"
+                id="contractType"
+                value={filters.contractType}
+                onChange={(e) => handleFilterChange('contractType', e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:ring-primary"
+              >
+                <option value="">Any</option>
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
+                <option value="Contract">Contract</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Salary Range</label>
+              <select
+                name="salaryRange"
+                id="salaryRange"
+                value={`${filters.minSalary}-${filters.maxSalary}`}
+                onChange={(e) => handleFilterChange('minSalary', e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:ring-primary"
+              >
+                <option value="">Any Salary</option>
+                {SALARY_RANGES.map(range => (
+                  <option key={range.label} value={range.label}>{range.label}</option>
+                ))}
+              </select>
+            </div>
+
           </div>
 
           <div className="mt-6 flex justify-end">
@@ -503,14 +637,14 @@ export default function DiscoverStaff() {
         {staff.map((member) => (
           <div
             key={member.id}
-            onClick={() => navigate(`/dashboard/staff/${member.id}`)}
+            onClick={() => handleNavigateToStaff(member.id)}
             className="bg-white rounded-lg shadow-sm overflow-hidden cursor-pointer group hover:shadow-md transition-shadow"
           >
             <div className="relative aspect-[4/3] overflow-hidden">
               {member.image_url ? (
                 <img
                   src={member.image_url}
-                  alt={member.name}
+                  alt={member.name || 'Staff'}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (
@@ -534,10 +668,10 @@ export default function DiscoverStaff() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1">
                   <h3 className="text-lg font-semibold text-gray-900">{member.name}</h3>
-                  <VerifiedIcon verified={member.verified} />
+                  <VerifiedIcon verified={member.verified || false} />
                 </div>
                 <span className="px-2 py-1 text-xs font-medium bg-primary/10 text-primary rounded-full">
-                  {member.level}
+                  {member.level || 'N/A'}
                 </span>
               </div>
               <div className="space-y-1 text-sm text-gray-600">
@@ -564,7 +698,7 @@ export default function DiscoverStaff() {
         <div className="min-h-[400px] flex items-center justify-center">
           <div className="flex items-center space-x-2">
             <Loader2 className="w-6 h-6 text-primary animate-spin" />
-            <span className="text-gray-600">Loading staff...</span>
+            <span className="text-gray-600">Loading...</span>
           </div>
         </div>
       )}
@@ -576,6 +710,12 @@ export default function DiscoverStaff() {
           </div>
         </div>
       )}
+
+      <ScheduleReminderModal 
+        isOpen={showScheduleReminder}
+        onClose={handleCloseReminder}
+        showCount={scheduleReminderCount}
+      />
     </div>
   );
 }

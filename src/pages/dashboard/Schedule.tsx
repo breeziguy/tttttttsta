@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth';
-import { Calendar, Clock, MapPin, X, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import { Calendar, Clock, MapPin, X, ChevronLeft, ChevronRight, Star, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import VerifiedIcon from '../../components/VerifiedIcon';
@@ -30,8 +30,8 @@ interface Interview {
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (feedback: string, rating: number, action: 'hire' | 'unsuccessful', cancellationReason?: string) => Promise<void>; // Adjusted onSubmit signature
-  type: 'hire' | 'unsuccessful' | 'canceled';
+  onSubmit: (feedback: string, rating: number, action: 'hire' | 'unsuccessful' | 'canceled' | 'dismissed' | 'suspended', reason?: string) => Promise<void>;
+  type: 'hire' | 'unsuccessful' | 'canceled' | 'dismissed' | 'suspended';
 }
 
 function FeedbackModal({ isOpen, onClose, onSubmit, type }: FeedbackModalProps) {
@@ -42,9 +42,9 @@ function FeedbackModal({ isOpen, onClose, onSubmit, type }: FeedbackModalProps) 
   const [loading, setLoading] = useState(false);
 
   const cancellationOptions = [
-    "Scheduling conflict",
-    "Changed mind",
     "Found another candidate",
+    "Scheduling conflict",
+    "Unforeseen circumstances",
     "Custom"
   ];
 
@@ -67,7 +67,7 @@ function FeedbackModal({ isOpen, onClose, onSubmit, type }: FeedbackModalProps) 
     try {
       const finalCancellationReason = cancellationReason === 'Custom' ? customReason : cancellationReason;
       // Pass cancellation reason only if type is 'canceled'
-      await onSubmit(feedback, rating, type === 'canceled' ? 'canceled' : type, type === 'canceled' ? finalCancellationReason : undefined);
+      await onSubmit(feedback, rating, type as any, type === 'canceled' ? finalCancellationReason : undefined);
       onClose();
     } catch (error) {
       console.error('Error submitting feedback:', error);
@@ -82,7 +82,7 @@ function FeedbackModal({ isOpen, onClose, onSubmit, type }: FeedbackModalProps) 
       <div className="bg-white rounded-lg max-w-md w-full">
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900">
-            {type === 'hire' ? 'Hire Staff' : type === 'unsuccessful' ? 'Mark as Unsuccessful' : 'Cancel Booking'}
+            {type === 'hire' ? 'Hire Employee' : type === 'unsuccessful' ? 'Mark as Unsuccessful' : 'Cancel Booking'}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
             <X size={20} />
@@ -168,7 +168,7 @@ function FeedbackModal({ isOpen, onClose, onSubmit, type }: FeedbackModalProps) 
                   : 'bg-red-500 hover:bg-red-600' // Changed cancel button color to red
               } disabled:opacity-50`}
             >
-              {loading ? 'Submitting...' : type === 'hire' ? 'Confirm Hire' : type === 'unsuccessful' ? 'Mark Unsuccessful' : 'Cancel Booking'}
+              {loading ? 'Submitting...' : type === 'hire' ? 'Hire Employee' : type === 'unsuccessful' ? 'Mark Unsuccessful' : 'Cancel Booking'}
             </button>
           </div>
         </form>
@@ -181,7 +181,7 @@ interface StaffDetailsModalProps {
   interview: Interview;
   isOpen: boolean;
   onClose: () => void;
-  onAction: (action: 'hire' | 'unsuccessful' | 'canceled') => void;
+  onAction: (action: 'hire' | 'unsuccessful' | 'canceled' | 'dismissed' | 'suspended') => void;
 }
 
 function StaffDetailsModal({ interview, isOpen, onClose, onAction }: StaffDetailsModalProps) {
@@ -191,7 +191,7 @@ function StaffDetailsModal({ interview, isOpen, onClose, onAction }: StaffDetail
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full">
         <div className="px-6 py-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900">Staff Details</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Employee Details</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
             <X size={24} />
           </button>
@@ -278,7 +278,7 @@ function StaffDetailsModal({ interview, isOpen, onClose, onAction }: StaffDetail
               onClick={() => onAction('hire')}
               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
             >
-              Hire
+              Hire Employee
             </button>
           </div>
         </div>
@@ -294,7 +294,7 @@ export default function Schedule() {
   const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
-  const [feedbackType, setFeedbackType] = useState<'hire' | 'unsuccessful' | 'canceled'>('hire');
+  const [feedbackType, setFeedbackType] = useState<'hire' | 'unsuccessful' | 'canceled' | 'dismissed' | 'suspended'>('hire');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -327,11 +327,11 @@ export default function Schedule() {
             verified
           )
         `)
-        .eq('client_id', profile.id)
+        .eq('client_id', profile.id as any)
         .order('scheduled_date', { ascending: false });
 
       if (error) throw error;
-      setInterviews(data || []);
+      setInterviews(data as any || []);
     } catch (error) {
       console.error('Error fetching interviews:', error);
       toast.error('Failed to fetch interviews');
@@ -346,7 +346,7 @@ export default function Schedule() {
     setIsDetailsModalOpen(true);
   };
 
-  const handleAction = (action: 'hire' | 'unsuccessful' | 'canceled') => {
+  const handleAction = (action: 'hire' | 'unsuccessful' | 'canceled' | 'dismissed' | 'suspended') => {
     setFeedbackType(action);
     setIsDetailsModalOpen(false);
     setIsFeedbackModalOpen(true);
@@ -355,23 +355,28 @@ export default function Schedule() {
   const handleFeedbackSubmit = async (
     feedback: string,
     rating: number,
-    action: 'hire' | 'unsuccessful' | 'canceled',
+    action: 'hire' | 'unsuccessful' | 'canceled' | 'dismissed' | 'suspended',
     cancellationReason?: string
   ) => {
     if (!selectedInterview || !profile?.id) return;
 
     try {
-      let updateData: any = {
-        status: action === 'hire' ? 'completed' : action === 'unsuccessful' ? 'rejected' : 'cancelled',
-        feedback: action !== 'canceled' ? feedback : null,
-        rating: action !== 'canceled' ? rating : null,
-        cancellation_reason: action === 'canceled' ? cancellationReason : null,
-      };
-
+      // Update interview status
+      const status = 
+        action === 'hire' ? 'completed' : 
+        action === 'unsuccessful' ? 'rejected' : 
+        action === 'dismissed' || action === 'suspended' ? 'completed' : 'cancelled';
+        
       const { error } = await supabase
         .from('staff_interviews')
-        .update(updateData)
-        .eq('id', selectedInterview.id);
+        .update({
+          status,
+          feedback,
+          rating,
+          cancellation_reason: cancellationReason
+        } as any)
+        .eq('id', selectedInterview.id as any)
+        .eq('client_id', profile.id as any);
 
       if (error) throw error;
 
@@ -384,7 +389,7 @@ export default function Schedule() {
             staff_id: selectedInterview.staff.id,
             status: 'hired',
             start_date: new Date().toISOString(), // Corrected date format
-          });
+          } as any);
         if (hireError) {
           // Handle potential duplicate entry or other errors
           if (hireError.code === '23505') { // unique constraint violation
@@ -397,7 +402,7 @@ export default function Schedule() {
         }
       }
 
-      toast.success(`Interview marked as ${action === 'hire' ? 'completed' : action === 'unsuccessful' ? 'rejected' : 'cancelled'}.`);
+      toast.success(`Interview marked as ${action === 'hire' ? 'completed' : action === 'unsuccessful' ? 'rejected' : action === 'dismissed' ? 'dismissed' : action === 'suspended' ? 'suspended' : 'cancelled'}.`);
       fetchInterviews(); // Refresh the list
       setIsFeedbackModalOpen(false);
       setSelectedInterview(null);
@@ -415,8 +420,8 @@ export default function Schedule() {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-gray-600">Loading interviews...</span>
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+          <span className="text-gray-600">Loading...</span>
         </div>
       </div>
     );
@@ -425,30 +430,24 @@ export default function Schedule() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Interviews</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Interview Schedule</h1>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="min-w-full divide-y divide-gray-200">
           <div className="bg-gray-50 px-6 py-3">
             <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Staff
+              <div className="col-span-4 text-left text-xs font-medium text-gray-500 uppercase">
+                Employee
               </div>
               <div className="col-span-2 text-left text-xs font-medium text-gray-500 uppercase">
                 Role
               </div>
-              <div className="col-span-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <div className="col-span-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Date
               </div>
-              <div className="col-span-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Time
-              </div>
-              <div className="col-span-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <div className="col-span-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Status
-              </div>
-              <div className="col-span-1 text-right text-xs font-medium text-gray-500 uppercase">
-                Action
               </div>
             </div>
           </div>
@@ -461,7 +460,7 @@ export default function Schedule() {
                 </div>
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No bookings scheduled</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  You haven't scheduled any bookings yet.
+                  You haven't scheduled any interview bookings yet.
                 </p>
               </div>
             ) : (
@@ -478,7 +477,7 @@ export default function Schedule() {
                   }}
                 >
                   <div className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-3 flex items-center">
+                    <div className="col-span-4 flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
                         {interview.staff?.image_url ? (
                           <img
@@ -502,27 +501,25 @@ export default function Schedule() {
                           <VerifiedIcon verified={interview.staff?.verified} />
                         </div>
                         <div className="text-sm text-gray-500">{interview.staff?.email}</div>
-                        <div className="text-sm text-gray-500">{interview.staff?.role}</div>
+                        <div className="text-sm text-gray-500">{interview.staff?.location}</div>
                       </div>
                     </div>
                     <div className="col-span-2">
                       <div className="text-sm text-gray-900">{interview.staff?.role}</div>
                       <div className="text-xs text-gray-500">{interview.staff?.level}</div>
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-3">
                       <div className="text-sm text-gray-900">
                         {new Date(interview.scheduled_date).toLocaleDateString()}
                       </div>
-                    </div>
-                    <div className="col-span-2">
-                      <div className="text-sm text-gray-900">
+                      <div className="text-xs text-gray-500">
                         {new Date(interview.scheduled_date).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
                       </div>
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-3">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           interview.status === 'completed'
@@ -536,14 +533,6 @@ export default function Schedule() {
                       >
                         {interview.status.charAt(0).toUpperCase() + interview.status.slice(1)}
                       </span>
-                    </div>
-                    <div className="col-span-1 text-right">
-                      {interview.status === 'scheduled' && (
-                        <button className="text-gray-400 hover:text-gray-500">
-                          <span className="sr-only">View details</span>
-                          <ChevronRight size={20} />
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>

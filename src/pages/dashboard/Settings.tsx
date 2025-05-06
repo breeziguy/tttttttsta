@@ -15,7 +15,7 @@ interface FormData {
   city: string;
   state: string;
   // Individual Specific
-  numberOfChildren: number;
+  numberOfHouseholdMembers: number;
   hasPets: boolean;
   // Corporate Specific
   companyName?: string;
@@ -68,7 +68,7 @@ export default function Settings() {
     addressLine2: profile?.address_line2 || '',
     city: profile?.city || '',
     state: profile?.location || '',
-    numberOfChildren: profile?.number_of_children || 0,
+    numberOfHouseholdMembers: profile?.number_of_household_members || 0,
     hasPets: profile?.has_pets || false,
     companyName: profile?.company_name,
     rcNumber: profile?.rc_number,
@@ -122,7 +122,7 @@ export default function Settings() {
             address_line2: formData.addressLine2,
             city: formData.city,
             location: formData.state,
-            number_of_children: formData.numberOfChildren,
+            number_of_household_members: formData.numberOfHouseholdMembers,
             has_pets: formData.hasPets,
           };
 
@@ -214,7 +214,7 @@ export default function Settings() {
 
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email
+                    Email Address
                   </label>
                   <input
                     type="email"
@@ -308,15 +308,15 @@ export default function Settings() {
                 {profile?.account_type === 'individual' && (
                   <>
                     <div>
-                      <label htmlFor="numberOfChildren" className="block text-sm font-medium text-gray-700">
-                        Number of Children
+                      <label htmlFor="numberOfHouseholdMembers" className="block text-sm font-medium text-gray-700">
+                        Number of Household Members
                       </label>
                       <input
                         type="number"
-                        name="numberOfChildren"
-                        id="numberOfChildren"
+                        name="numberOfHouseholdMembers"
+                        id="numberOfHouseholdMembers"
                         min="0"
-                        value={formData.numberOfChildren}
+                        value={formData.numberOfHouseholdMembers}
                         onChange={handleInputChange}
                         className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-primary focus:ring-primary px-3 py-2"
                       />

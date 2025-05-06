@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Calendar, Clock, ChevronLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, Clock, ChevronLeft, MapPin, Briefcase, Users, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/auth';
@@ -21,6 +21,31 @@ export default function ConfirmBooking({
   const navigate = useNavigate();
   const { profile } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [staffDetails, setStaffDetails] = useState<any>(null);
+  const [detailsLoading, setDetailsLoading] = useState(true);
+
+  // Fetch more employee details to display
+  useEffect(() => {
+    const fetchStaffDetails = async () => {
+      try {
+        setDetailsLoading(true);
+        const { data, error } = await supabase
+          .from('staff')
+          .select('*')
+          .eq('id', staffId as any)
+          .single();
+
+        if (error) throw error;
+        setStaffDetails(data);
+      } catch (err) {
+        console.error('Error fetching staff details:', err);
+      } finally {
+        setDetailsLoading(false);
+      }
+    };
+    
+    fetchStaffDetails();
+  }, [staffId]);
 
   const handleConfirm = async () => {
     if (!profile?.id) return;
@@ -35,7 +60,7 @@ export default function ConfirmBooking({
           staff_id: staffId,
           scheduled_date: selectedDate.toISOString(),
           status: 'scheduled'
-        });
+        } as any);
 
       if (interviewError) throw interviewError;
 
@@ -47,6 +72,11 @@ export default function ConfirmBooking({
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatNumber = (num: number | null | undefined) => {
+    if (num === null || num === undefined) return 'N/A';
+    return num.toLocaleString();
   };
 
   return (
@@ -92,8 +122,60 @@ export default function ConfirmBooking({
         </div>
 
         <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Staff Details</h3>
-          <p className="text-gray-600">{staffName}</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Employee Details</h3>
+          
+          {detailsLoading ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </div>
+          ) : staffDetails ? (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-gray-900 font-medium">{staffDetails.name}</p>
+                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                  {staffDetails.level || 'N/A'}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Briefcase className="w-4 h-4 flex-shrink-0" />
+                  <span>Role: {staffDetails.role || 'N/A'}</span>
+                </div>
+                
+                <div className="flex items-center gap-2 text-gray-600">
+                  <MapPin className="w-4 h-4 flex-shrink-0" />
+                  <span>Location: {staffDetails.location || 'N/A'}</span>
+                </div>
+                
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Star className="w-4 h-4 flex-shrink-0" />
+                  <span>Experience: {staffDetails.experience || 'N/A'} years</span>
+                </div>
+                
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Users className="w-4 h-4 flex-shrink-0" />
+                  <span>Marital Status: {staffDetails.marital_status || 'N/A'}</span>
+                </div>
+                
+                {staffDetails.children_count !== null && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Users className="w-4 h-4 flex-shrink-0" />
+                    <span>Children: {staffDetails.children_count}</span>
+                  </div>
+                )}
+                
+                {staffDetails.salary && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <span className="font-medium">Salary:</span>
+                    <span>₦{formatNumber(staffDetails.salary)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-600">{staffName}</p>
+          )}
         </div>
 
         <div className="flex justify-end space-x-4">

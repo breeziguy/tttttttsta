@@ -488,13 +488,18 @@ export default function Hiring() {
                     </span>
                   </div>
                 )}
-                {member.action_status && (
-                  <div className={`absolute top-2 left-2 px-2 py-1 text-xs font-medium rounded-md ${
-                    member.action_status === 'dismissed' 
-                      ? 'bg-red-500 text-white' 
-                      : 'bg-green-500 text-white'
-                  }`}>
-                    {member.action_status.charAt(0).toUpperCase() + member.action_status.slice(1)}
+                {/* Status Banner Logic */}
+                {member.action_status === 'dismissed' ? (
+                  <div className="absolute top-2 left-2 px-2 py-1 text-xs font-medium rounded-md bg-red-500 text-white">
+                    Dismissed
+                  </div>
+                ) : member.action_status === 'suspended' ? (
+                  <div className="absolute top-2 left-2 px-2 py-1 text-xs font-medium rounded-md bg-yellow-500 text-white">
+                    Suspended
+                  </div>
+                ) : (
+                  <div className="absolute top-2 left-2 px-2 py-1 text-xs font-medium rounded-md bg-green-500 text-white">
+                    Active
                   </div>
                 )}
               </div>

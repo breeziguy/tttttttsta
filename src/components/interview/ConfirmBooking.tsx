@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/auth';
 import toast from 'react-hot-toast';
+import InterviewOutcomeReminderModal from './InterviewOutcomeReminderModal';
 
 interface ConfirmBookingProps {
   staffId: string;
@@ -23,6 +24,7 @@ export default function ConfirmBooking({
   const [loading, setLoading] = useState(false);
   const [staffDetails, setStaffDetails] = useState<any>(null);
   const [detailsLoading, setDetailsLoading] = useState(true);
+  const [showOutcomeReminder, setShowOutcomeReminder] = useState(false);
 
   // Fetch more employee details to display
   useEffect(() => {
@@ -65,7 +67,7 @@ export default function ConfirmBooking({
       if (interviewError) throw interviewError;
 
       toast.success('Interview scheduled successfully!');
-      navigate('/dashboard/schedule');
+      setShowOutcomeReminder(true);
     } catch (error) {
       console.error('Error scheduling interview:', error);
       toast.error('Failed to schedule interview. Please try again.');
@@ -77,6 +79,11 @@ export default function ConfirmBooking({
   const formatNumber = (num: number | null | undefined) => {
     if (num === null || num === undefined) return 'N/A';
     return num.toLocaleString();
+  };
+
+  const handleReminderClose = () => {
+    setShowOutcomeReminder(false);
+    navigate('/dashboard/schedule');
   };
 
   return (
@@ -174,7 +181,7 @@ export default function ConfirmBooking({
               </div>
             </div>
           ) : (
-            <p className="text-gray-600">{staffName}</p>
+          <p className="text-gray-600">{staffName}</p>
           )}
         </div>
 
@@ -200,6 +207,10 @@ export default function ConfirmBooking({
           </button>
         </div>
       </div>
+      <InterviewOutcomeReminderModal
+        isOpen={showOutcomeReminder}
+        onClose={handleReminderClose}
+      />
     </div>
   );
 }

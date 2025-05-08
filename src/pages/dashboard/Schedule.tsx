@@ -25,6 +25,8 @@ interface Interview {
   feedback?: string;
   rating?: number;
   cancellation_reason?: string; // Added cancellation reason
+  hiring_decision?: string; // Added hiring_decision
+  decision_date?: string; // Added decision_date
 }
 
 interface FeedbackModalProps {
@@ -315,6 +317,9 @@ export default function Schedule() {
           status,
           feedback,
           rating,
+          cancellation_reason, 
+          hiring_decision, 
+          decision_date,
           staff:staff_id (
             id,
             name,
@@ -361,20 +366,38 @@ export default function Schedule() {
     if (!selectedInterview || !profile?.id) return;
 
     try {
-      // Update interview status
-      const status = 
-        action === 'hire' ? 'completed' : 
-        action === 'unsuccessful' ? 'rejected' : 
-        action === 'dismissed' || action === 'suspended' ? 'completed' : 'cancelled';
+      let updateData: any = {
+        feedback,
+        rating,
+      };
+      let successMessage = '';
+
+      if (action === 'hire') {
+        updateData.status = 'completed';
+        updateData.hiring_decision = 'hired';
+        updateData.decision_date = new Date().toISOString();
+        successMessage = 'Employee Hired';
+      } else if (action === 'unsuccessful') {
+        updateData.status = 'completed'; 
+        updateData.hiring_decision = 'rejected';
+        updateData.decision_date = new Date().toISOString();
+        successMessage = 'Marked as Unsuccessful';
+      } else if (action === 'canceled') {
+        updateData.status = 'cancelled';
+        updateData.cancellation_reason = cancellationReason;
+        // hiring_decision and decision_date remain null
+        successMessage = 'Booking Cancelled';
+      } else if (action === 'dismissed' || action === 'suspended') {
+        // This part handles 'dismissed' or 'suspended' from My Hires, might need adjustment
+        // For now, assume it updates the interview record for consistency if that's the flow
+        updateData.status = 'completed'; // Or another appropriate status
+        // updateData.hiring_decision = action; // This might not be right for interview table
+        successMessage = `Marked as ${action}`;
+      }
         
       const { error } = await supabase
         .from('staff_interviews')
-        .update({
-          status,
-          feedback,
-          rating,
-          cancellation_reason: cancellationReason
-        } as any)
+        .update(updateData)
         .eq('id', selectedInterview.id as any)
         .eq('client_id', profile.id as any);
 
@@ -387,8 +410,8 @@ export default function Schedule() {
           .insert({
             client_id: profile.id,
             staff_id: selectedInterview.staff.id,
-            status: 'hired',
-            start_date: new Date().toISOString(), // Corrected date format
+            status: 'hired', // This should be 'hired'
+            start_date: new Date().toISOString(), 
           } as any);
         if (hireError) {
           // Handle potential duplicate entry or other errors
@@ -402,7 +425,7 @@ export default function Schedule() {
         }
       }
 
-      toast.success(`Interview marked as ${action === 'hire' ? 'completed' : action === 'unsuccessful' ? 'rejected' : action === 'dismissed' ? 'dismissed' : action === 'suspended' ? 'suspended' : 'cancelled'}.`);
+      toast.success(successMessage);
       fetchInterviews(); // Refresh the list
       setIsFeedbackModalOpen(false);
       setSelectedInterview(null);
@@ -414,6 +437,23 @@ export default function Schedule() {
       }
       toast.error(`Failed to mark interview as ${action}. Details: ${error.message || 'Unknown error'}`);
     }
+  };
+
+  const getDisplayStatus = (interview: Interview): string => {
+    if (interview.status === 'completed' && interview.hiring_decision === 'hired') {
+      return 'Hired';
+    }
+    if (interview.status === 'completed' && interview.hiring_decision === 'rejected') {
+      return 'Unsuccessful';
+    }
+    if (interview.status === 'cancelled') {
+      return 'Cancelled';
+    }
+    if (interview.status === 'scheduled') {
+      return 'Scheduled';
+    }
+    // Fallback for other 'completed' statuses or any other unhandled status
+    return interview.status.charAt(0).toUpperCase() + interview.status.slice(1);
   };
 
   if (loading) {
@@ -522,16 +562,18 @@ export default function Schedule() {
                     <div className="col-span-3">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          interview.status === 'completed'
+                          getDisplayStatus(interview) === 'Hired'
                             ? 'bg-green-100 text-green-800'
-                            : interview.status === 'rejected'
+                            : getDisplayStatus(interview) === 'Unsuccessful'
                             ? 'bg-red-100 text-red-800'
-                            : interview.status === 'cancelled'
+                            : getDisplayStatus(interview) === 'Cancelled'
                             ? 'bg-gray-100 text-gray-800'
-                            : 'bg-blue-100 text-blue-800'
+                            : getDisplayStatus(interview) === 'Scheduled'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-yellow-100 text-yellow-800' // Default/fallback style
                         }`}
                       >
-                        {interview.status.charAt(0).toUpperCase() + interview.status.slice(1)}
+                        {getDisplayStatus(interview)}
                       </span>
                     </div>
                   </div>

@@ -47,8 +47,9 @@ export default function Overview() {
         const { data: staffData, error: staffError } = await supabase
           .from('staff_hiring_status')
           .select('id, staff:staff_id(name)')
-          .eq('client_id', profile.id)
-          .eq('status', 'hired');
+          .eq('client_id', profile.id as any)
+          .eq('status', 'hired' as any)
+          .is('action_status', null);
 
         if (staffError) throw staffError;
 
@@ -56,8 +57,8 @@ export default function Overview() {
         const { data: interviewData, error: interviewError } = await supabase
           .from('staff_interviews')
           .select('id, staff:staff_id(name)')
-          .eq('client_id', profile.id)
-          .eq('status', 'scheduled');
+          .eq('client_id', profile.id as any)
+          .eq('status', 'scheduled' as any);
 
         if (interviewError) throw interviewError;
 
@@ -72,20 +73,20 @@ export default function Overview() {
             created_at,
             staff:staff_id (name)
           `)
-          .eq('client_id', profile.id)
-          .eq('status', 'hired')
+          .eq('client_id', profile.id as any)
+          .eq('status', 'hired' as any)
           .order('created_at', { ascending: false })
           .limit(5);
 
         if (hiresError) throw hiresError;
 
         hires?.forEach(hire => {
-          if (hire.staff?.name) {
+          if ((hire as any).staff?.name) {
             activities.push({
-              id: hire.id,
+              id: (hire as any).id,
               type: 'hire',
-              description: `You hired ${hire.staff.name}`,
-              date: hire.created_at
+              description: `You hired ${(hire as any).staff.name}`,
+              date: (hire as any).created_at
             });
           }
         });
@@ -98,19 +99,19 @@ export default function Overview() {
             created_at,
             staff:staff_id (name)
           `)
-          .eq('client_id', profile.id)
+          .eq('client_id', profile.id as any)
           .order('created_at', { ascending: false })
           .limit(5);
 
         if (interviewsError) throw interviewsError;
 
         interviews?.forEach(interview => {
-          if (interview.staff?.name) {
+          if ((interview as any).staff?.name) {
             activities.push({
-              id: interview.id,
+              id: (interview as any).id,
               type: 'interview',
-              description: `You scheduled an interview with ${interview.staff.name}`,
-              date: interview.created_at
+              description: `You scheduled an interview with ${(interview as any).staff.name}`,
+              date: (interview as any).created_at
             });
           }
         });
@@ -180,7 +181,9 @@ export default function Overview() {
                 className="text-xl"
                 style={{ color: '#CAED63' }}
               >
-                {profile?.subscription_tier?.charAt(0).toUpperCase() + profile?.subscription_tier?.slice(1)} Plan
+                {profile?.subscription_tier 
+                  ? profile.subscription_tier.charAt(0).toUpperCase() + profile.subscription_tier.slice(1) 
+                  : 'N/A'} Plan
               </p>
             </div>
             <NotificationBell />
@@ -197,7 +200,7 @@ export default function Overview() {
             </div>
             <div className="ml-4">
               <h3 className="text-lg font-semibold text-gray-900">{stats.activeStaffCount}</h3>
-              <p className="text-gray-600">Active Employee</p>
+              <p className="text-gray-600">Active Employee{stats.activeStaffCount === 1 ? '' : 's'}</p>
             </div>
           </div>
         </div>

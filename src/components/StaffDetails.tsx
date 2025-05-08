@@ -862,7 +862,7 @@ export default function StaffDetails() {
         </div>
 
         <div className="p-6 border-b">
-          <h4 className="text-lg font-semibold text-gray-900 mb-3">Certifications, Education & Work History</h4>
+          <h4 className="text-lg font-semibold text-gray-900 mb-3">Work History, Education & Certification</h4>
           <div className="space-y-4 text-sm text-gray-600">
             <div className="flex items-start gap-2">
               <Award size={16} className="flex-shrink-0 mt-0.5" />
@@ -879,7 +879,7 @@ export default function StaffDetails() {
             <div className="flex items-start gap-2">
               <School size={16} className="flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium mb-1">Education Background:</p>
+                <p className="font-medium mb-1">Educational Background:</p>
                 {staff.education_background ? (
                   <p className="whitespace-pre-line">{formatObjectData(staff.education_background)}</p>
                 ) : (

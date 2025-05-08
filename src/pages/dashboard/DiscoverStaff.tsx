@@ -64,11 +64,11 @@ const AGE_RANGES = [
 ];
 
 const SALARY_RANGES = [
-  { min: 0, max: 70000, label: 'Up to 70k Naira' },
-  { min: 70000, max: 150000, label: '70k - 150k Naira' },
-  { min: 150000, max: 230000, label: '150k - 230k Naira' },
-  { min: 230000, max: 300000, label: '230k - 300k Naira' },
-  { min: 300000, max: 1000000000, label: '300k+ Naira' }
+  { min: 0, max: 70000, label: 'Up to 70,000 Naira' },
+  { min: 100000, max: 150000, label: '100,000 - 150,000 Naira' },
+  { min: 150000, max: 230000, label: '150,000 - 230,000 Naira' },
+  { min: 230000, max: 300000, label: '230,000 - 300,000 Naira' },
+  { min: 300000, max: 1000000000, label: '300,000+ Naira' }
 ];
 
 const COMMON_SKILLS = [
@@ -303,7 +303,7 @@ export default function DiscoverStaff() {
       const accessibleCount = Math.floor(total * (accessPercentage / 100));
 
       const fetchedStaff = data as unknown as StaffRow[];
-      
+
       if (from >= accessibleCount) {
         setHasMore(false);
         setStaff(prev => pageNumber === 0 ? [] : prev);

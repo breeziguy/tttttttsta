@@ -43,7 +43,7 @@ export default function ScheduleReminderModal({ isOpen, onClose, showCount }: Sc
           <h3 className="text-xl font-semibold text-gray-900">Schedule Interviews</h3>
           
           <p className="text-gray-600">
-            Please schedule interviews with staff to avoid double-booking them with other clients.
+            Please use the 'Schedule Interview' option to avoid double-booking and ensure employee availability. Once booked, the employee's profile will be blocked from additional simultaneous interview bookings.
           </p>
 
           <button
